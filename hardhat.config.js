@@ -5,47 +5,52 @@ let secret = require("./secret");
 module.exports = {
   networks: {
     hardhat: {
-      chainId: 56//56//8453//137//8453//137//8453//56
+      chainId: 10143//56//56//8453//137//8453//137//8453//56 
     },
-    bscTestnet: {
-      url: 'https://data-seed-prebsc-2-s1.binance.org:8545/',
+    // bscTestnet: {
+    //   url: 'https://data-seed-prebsc-2-s1.binance.org:8545/',
+    //   accounts: [secret.key]
+    // },
+    monadTestnet: {
+      url: 'https://testnet-rpc.monad.xyz',
       accounts: [secret.key]
-    },
-    bscMainnet: {
-      url: 'https://bnb-mainnet.g.alchemy.com/v2/BI5XlYByNdQfh3hcluwetuwR9KzTSn01',
-      accounts: [secret.key]
-    },
-    polygonTestnet: {
-      url: 'https://polygon-mumbai-bor-rpc.publicnode.com/',
-      accounts: [secret.key]
-    },
-    polygonMainnet: {
-      url: 'https://polygon-rpc.com/',//'https://polygon-bor-rpc.publicnode.com',
-      accounts: [secret.key],
-      // chainId: 137
-    },
-    baseMainnet: {
-      url: 'https://base-mainnet.g.alchemy.com/v2/BI5XlYByNdQfh3hcluwetuwR9KzTSn01',
-      accounts: [secret.key],
-      chainId: 8453
-    },
-    infinaeonMainnet: {
-      url: 'https://rpc.infinaeon.com/',
-      accounts: [secret.key],
-      chainId: 420000
     }
+    // bscMainnet: {
+    //   url: 'https://bnb-mainnet.g.alchemy.com/v2/BI5XlYByNdQfh3hcluwetuwR9KzTSn01',
+    //   accounts: [secret.key]
+    // },
+    // polygonTestnet: {
+    //   url: 'https://polygon-mumbai-bor-rpc.publicnode.com/',
+    //   accounts: [secret.key]
+    // },
+    // polygonMainnet: {
+    //   url: 'https://polygon-rpc.com/',//'https://polygon-bor-rpc.publicnode.com',
+    //   accounts: [secret.key],
+    //   // chainId: 137
+    // },
+    // baseMainnet: {
+    //   url: 'https://base-mainnet.g.alchemy.com/v2/BI5XlYByNdQfh3hcluwetuwR9KzTSn01',
+    //   accounts: [secret.key],
+    //   chainId: 8453
+    // },
+    // infinaeonMainnet: {
+    //   url: 'https://rpc.infinaeon.com/',
+    //   accounts: [secret.key],
+    //   chainId: 420000
+    // }
   },
   etherscan: {
-    apiKey: secret.bscscanAPI,//polygonAPI,//basescanAPI,//polygonAPI//bscscanAPI
-    customChains: [
-      {
-        network: "base",
-        chainId: 8453,
-        urls: {
-          apiURL: "https://api.basescan.org/api",
-          browserURL: "https://basescan.org/"
-        }
-      }
+    enabled: false,
+    // apiKey: secret.bscscanAPI,//polygonAPI,//basescanAPI,//polygonAPI//bscscanAPI
+    // customChains: [
+      // {
+      //   network: "base",
+      //   chainId: 8453,
+      //   urls: {
+      //     apiURL: "https://api.basescan.org/api",
+      //     browserURL: "https://basescan.org/"
+      //   }
+      // }
       // {
       //   network: "infinaeon",
       //   chainId: 420000,
@@ -54,12 +59,17 @@ module.exports = {
       //     browserURL: "https://explorer.infinaeon.com/"
       //   }
       // }
-    ]
+    // ]
+  },
+  sourcify: {
+    apiUrl: "https://sourcify-api-monad.blockvision.org",
+    browserUrl: "https://testnet.monadexplorer.com",
+    enabled: true,
   },
   solidity: {
     compilers: [
       {
-        version: "0.8.28",
+        version: "0.8.30",
         settings: {
           optimizer: {
             enabled: true,

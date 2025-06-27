@@ -1,10 +1,10 @@
 //SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.30;
 
 import "./lib/Ownable.sol";
-import "./interfaces/ILunarVolumeTracker.sol";
+import "./interfaces/IEnjoyPumpVolumeTracker.sol";
 
-contract LunarVolumeTracker is ILunarVolumeTracker, Ownable {
+contract EnjoyPumpVolumeTracker is IEnjoyPumpVolumeTracker, Ownable {
 
     // Database contract
     address public database;
@@ -19,7 +19,7 @@ contract LunarVolumeTracker is ILunarVolumeTracker, Ownable {
     address[] public allUsers;
 
     // Data needed for token to display on scanners
-    string public constant name = "LunarVolume";
+    string public constant name = "EnjoyPumpVolume";
     string public constant symbol = "LVolume";
     uint8 public constant decimals = 18;
     event Transfer(address indexed from, address indexed to, uint256 value);
@@ -33,7 +33,7 @@ contract LunarVolumeTracker is ILunarVolumeTracker, Ownable {
     }
 
     function addVolume(address user, uint256 amount) external override {
-        require(msg.sender == database, "LunarVolumeTracker: Only Database can call this function");
+        require(msg.sender == database, "EnjoyPumpVolumeTracker: Only Database can call this function");
         
         // if new user, push to list
         if (volumeFor[user] == 0) {

@@ -1,12 +1,12 @@
 //SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.30;
 
 import "./interfaces/IICOManager.sol";
 import "./interfaces/IICOBondingCurve.sol";
 import "./lib/Ownable.sol";
 import "./interfaces/IDatabase.sol";
 import "./lib/EnumerableSet.sol";
-import "./interfaces/ILunarPumpToken.sol";
+import "./interfaces/IEnjoyPumpToken.sol";
 
 contract ICOManager is IICOManager, Ownable {
 
@@ -79,7 +79,7 @@ contract ICOManager is IICOManager, Ownable {
         icos[token].status.contributions[msg.sender] = 0;
 
         // send tokens to claimer
-        ILunarPumpToken(token).transfer(msg.sender, claimAmount);
+        IEnjoyPumpToken(token).transfer(msg.sender, claimAmount);
     }
 
     function endICO(address token) external {
@@ -168,7 +168,7 @@ contract ICOManager is IICOManager, Ownable {
         address token,
         bytes calldata payload
     ) external override {
-        require(msg.sender == generator, "Only Lunar Pump Generator can launch ICOs");
+        require(msg.sender == generator, "Only Enjoy Pump Generator can launch ICOs");
         require(icos[token].startTime == 0, "ICO already exists for this token");
 
         // decode ICO configuration payload

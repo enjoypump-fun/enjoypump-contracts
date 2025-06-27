@@ -1,14 +1,14 @@
 //SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.30;
 
 /**
     Token Master Copy, all tokens will be created from this contract
  */
 
-import "./interfaces/ILunarPumpToken.sol";
+import "./interfaces/IEnjoyPumpToken.sol";
 import "./interfaces/IBondingCurve.sol";
 
-contract LunarPumpTokenData {
+contract EnjoyPumpTokenData {
 
     // total supply
     uint256 internal _totalSupply;
@@ -38,7 +38,7 @@ contract LunarPumpTokenData {
     }
 }
 
-contract LunarPumpToken is LunarPumpTokenData, ILunarPumpToken {
+contract EnjoyPumpToken is EnjoyPumpTokenData, IEnjoyPumpToken {
 
     function __init__(bytes calldata payload, address bondingCurve_) external override {
         require(bondingCurve == address(0), 'Already Initialized');

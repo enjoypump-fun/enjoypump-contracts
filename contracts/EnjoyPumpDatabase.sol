@@ -1,19 +1,19 @@
 //SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.30;
 
 /**
-    Stores all relevant information on all projects deployed through Lunar Pump
+    Stores all relevant information on all projects deployed through Enjoy Pump
  */
 
 import "./interfaces/IDatabase.sol";
 import "./interfaces/IBondingCurve.sol";
-import "./interfaces/ILunarGenerator.sol";
-import "./interfaces/ILunarVolumeTracker.sol";
+import "./interfaces/IEnjoyPumpGenerator.sol";
+import "./interfaces/IEnjoyPumpVolumeTracker.sol";
 import "./lib/EnumerableSet.sol";
 import "./lib/Ownable.sol";
 import "./lib/TransferHelper.sol";
 
-contract LunarDatabase is IDatabase, Ownable {
+contract EnjoyPumpDatabase is IDatabase, Ownable {
 
     // Project struct
     struct Project {
@@ -35,14 +35,14 @@ contract LunarDatabase is IDatabase, Ownable {
     // Maps an address to a list of projects they have launched
     mapping ( address => uint256[] ) public allDevProjects;
 
-    // Master copy of the LunarPumpToken
-    address internal lunarPumpTokenMasterCopy;
+    // Master copy of the EnjoyPumpToken
+    address internal enjoyPumpTokenMasterCopy;
 
-    // Master copy of the LunarPumpBondingCurve
-    address internal lunarPumpBondingCurveMasterCopy;
+    // Master copy of the EnjoyPumpBondingCurve
+    address internal enjoyPumpBondingCurveMasterCopy;
 
-    // LunarPumpGenerator
-    address internal lunarPumpGenerator;
+    // EnjoyPumpGenerator
+    address internal enjoyPumpGenerator;
 
     // Launch fee
     uint256 public launchFee;
@@ -59,8 +59,8 @@ contract LunarDatabase is IDatabase, Ownable {
     // Token Perma Locker
     address public liquidityPermaLocker;
 
-    // Lunar Volume Tracker
-    address public lunarVolumeTracker;
+    // EnjoyPump Volume Tracker
+    address public enjoyPumpVolumeTracker;
 
     // List of all bonded projects
     EnumerableSet.UintSet private bondedProjects;
@@ -82,10 +82,10 @@ contract LunarDatabase is IDatabase, Ownable {
     }
 
     /**
-        Sets the address of the LunarPumpTokenMasterCopy
+        Sets the address of the EnjoyPumpTokenMasterCopy
      */
-    function setLunarPumpTokenMasterCopy(address _lunarPumpTokenMasterCopy) external onlyOwner {
-        lunarPumpTokenMasterCopy = _lunarPumpTokenMasterCopy;
+    function setEnjoyPumpTokenMasterCopy(address _enjoyPumpTokenMasterCopy) external onlyOwner {
+        enjoyPumpTokenMasterCopy = _enjoyPumpTokenMasterCopy;
     }
 
     /**
@@ -96,17 +96,17 @@ contract LunarDatabase is IDatabase, Ownable {
     }
 
     /**
-        Sets the address of the LunarPumpBondingCurveMasterCopy
+        Sets the address of the EnjoyPumpBondingCurveMasterCopy
      */
-    function setLunarPumpBondingCurveMasterCopy(address _lunarPumpBondingCurveMasterCopy) external onlyOwner {
-        lunarPumpBondingCurveMasterCopy = _lunarPumpBondingCurveMasterCopy;
+    function setEnjoyPumpBondingCurveMasterCopy(address _enjoyPumpBondingCurveMasterCopy) external onlyOwner {
+        enjoyPumpBondingCurveMasterCopy = _enjoyPumpBondingCurveMasterCopy;
     }
 
     /**
-        Sets the address of the LunarPumpGenerator
+        Sets the address of the EnjoyPumpGenerator
      */
-    function setLunarPumpGenerator(address _lunarPumpGenerator) external onlyOwner {
-        lunarPumpGenerator = _lunarPumpGenerator;
+    function setEnjoyPumpGenerator(address _enjoyPumpGenerator) external onlyOwner {
+        enjoyPumpGenerator = _enjoyPumpGenerator;
     }
 
     /**
@@ -131,10 +131,10 @@ contract LunarDatabase is IDatabase, Ownable {
     }
 
     /**
-        Sets the lunar volume tracker
+        Sets the enjoyPump volume tracker
      */
-    function setLunarVolumeTracker(address _lunarVolumeTracker) external onlyOwner {
-        lunarVolumeTracker = _lunarVolumeTracker;
+    function setEnjoyPumpVolumeTracker(address _enjoyPumpVolumeTracker) external onlyOwner {
+        enjoyPumpVolumeTracker = _enjoyPumpVolumeTracker;
     }
 
     /**
@@ -148,12 +148,12 @@ contract LunarDatabase is IDatabase, Ownable {
         if (projects[assetToProject[bondingCurveToToken[msg.sender]]].bondingCurve != msg.sender) {
             return;
         }
-        if (amount == 0 || user == address(0) || lunarVolumeTracker == address(0)) {
+        if (amount == 0 || user == address(0) || enjoyPumpVolumeTracker == address(0)) {
             return;
         }
 
         // register volume
-        ILunarVolumeTracker(lunarVolumeTracker).addVolume(user, amount);
+        IEnjoyPumpVolumeTracker(enjoyPumpVolumeTracker).addVolume(user, amount);
     }
 
     function bondProject() external override {
@@ -193,7 +193,7 @@ contract LunarDatabase is IDatabase, Ownable {
         TransferHelper.safeTransferETH(feeRecipient, launchFee);
 
         // generate token and bonding curve
-        (address token, address bondingCurve) = ILunarGenerator(lunarPumpGenerator).generateProject(tokenPayload, bondingCurvePayload, liquidityAdder);
+        (address token, address bondingCurve) = IEnjoyPumpGenerator(enjoyPumpGenerator).generateProject(tokenPayload, bondingCurvePayload, liquidityAdder);
 
         // store project
         projects[projectNonce] = Project({
@@ -231,8 +231,8 @@ contract LunarDatabase is IDatabase, Ownable {
         return projectNonce - 1;
     }
 
-    function getLunarPumpTokenMasterCopy() external view override returns (address) {
-        return lunarPumpTokenMasterCopy;
+    function getEnjoyPumpTokenMasterCopy() external view override returns (address) {
+        return enjoyPumpTokenMasterCopy;
     }
 
     function getAllDevProjects(address dev) external view returns (uint256[] memory) {
@@ -251,11 +251,11 @@ contract LunarDatabase is IDatabase, Ownable {
     }
 
     function getBondingCurveMasterCopy() external view override returns (address) {
-        return lunarPumpBondingCurveMasterCopy;
+        return enjoyPumpBondingCurveMasterCopy;
     }
 
-    function getLunarPumpGenerator() external view override returns (address) {
-        return lunarPumpGenerator;
+    function getEnjoyPumpGenerator() external view override returns (address) {
+        return enjoyPumpGenerator;
     }
 
     function isBonded(address token) external view override returns (bool) {
@@ -266,7 +266,7 @@ contract LunarDatabase is IDatabase, Ownable {
         return IBondingCurve(projects[projectID].bondingCurve).isBonded();
     }
 
-    function isLunarPumpToken(address token) external view override returns (bool) {
+    function isEnjoyPumpToken(address token) external view override returns (bool) {
         return assetToProject[token] != 0 && projects[assetToProject[token]].asset == token;
     }
 

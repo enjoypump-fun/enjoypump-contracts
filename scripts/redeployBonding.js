@@ -60,8 +60,8 @@ async function main() {
     nonceOffset = 0;
     console.log('Account nonce: ', baseNonce);
 
-    // const LunarDatabase = await deployContract('LunarDatabase', 'contracts/LunarDatabase.sol:LunarDatabase', []);
-    // const LunarDatabase = await fetchContract('contracts/LunarDatabase.sol:LunarDatabase', '0xc48556Da0E6a7af9b175e907c7Be8e8CB6070e3D');
+    // const EnjoyPumpDatabase = await deployContract('EnjoyPumpDatabase', 'contracts/EnjoyPumpDatabase.sol:EnjoyPumpDatabase', []);
+    // const EnjoyPumpDatabase = await fetchContract('contracts/EnjoyPumpDatabase.sol:EnjoyPumpDatabase', '0xc48556Da0E6a7af9b175e907c7Be8e8CB6070e3D');
     // await sleep(5_000);
 
 
@@ -70,10 +70,10 @@ async function main() {
 
     // await verify(SupplyFetcher.address, [], 'contracts/SupplyFetcher.sol:SupplyFetcher');
 
-    // await LunarDatabase.setFeeRecipient(FeeReceiver.address, { nonce: getNonce() });
+    // await EnjoyPumpDatabase.setFeeRecipient(FeeReceiver.address, { nonce: getNonce() });
     // console.log('Set Fee receiver');
 
-    const LunarDatabase = await fetchContract('contracts/LunarDatabase.sol:LunarDatabase', '0x0c073F76B8e4a8FF8D338258e22De4Af8E0c194F');
+    const EnjoyPumpDatabase = await fetchContract('contracts/EnjoyPumpDatabase.sol:EnjoyPumpDatabase', '0x0c073F76B8e4a8FF8D338258e22De4Af8E0c194F');
     await sleep(5_000);
 
     const INFFeeReceiver = await deployContract('INFFeeReceiver', 'contracts/INFFeeReceiver.sol:INFFeeReceiver', []);
@@ -81,13 +81,13 @@ async function main() {
 
     const feeArgs = [
       INFFeeReceiver.address,
-      LunarDatabase.address
+      EnjoyPumpDatabase.address
     ]
 
     const FeeReceiver = await deployContract('FeeReceiver', 'contracts/FeeReceiver.sol:FeeReceiver', feeArgs);
     await sleep(12_000);
 
-    await LunarDatabase.setFeeRecipient(FeeReceiver.address, { nonce: getNonce() });
+    await EnjoyPumpDatabase.setFeeRecipient(FeeReceiver.address, { nonce: getNonce() });
     await sleep(5000);
     console.log('Set Fee receiver');
 
@@ -100,7 +100,7 @@ async function main() {
     // await verify(BondingCurve.address, [], 'contracts/BondingCurve.sol:BondingCurve');
 
     // set master copies
-    // await LunarDatabase.setLunarPumpBondingCurveMasterCopy(BondingCurve.address, { nonce: getNonce() });
+    // await EnjoyPumpDatabase.setEnjoyPumpBondingCurveMasterCopy(BondingCurve.address, { nonce: getNonce() });
     // await sleep(5000);
     // console.log('Set Bonding Curve Master Copy');
 

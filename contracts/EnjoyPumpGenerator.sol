@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.30;
 
 /**
     Responsible for generating all contracts associated with a new project
@@ -11,13 +11,13 @@ pragma solidity 0.8.28;
 
 import "./lib/Ownable.sol";
 import "./interfaces/IBondingCurve.sol";
-import "./interfaces/ILunarPumpToken.sol";
-import "./interfaces/ILunarGenerator.sol";
+import "./interfaces/IEnjoyPumpToken.sol";
+import "./interfaces/IEnjoyPumpGenerator.sol";
 import "./interfaces/IDatabase.sol";
 import "./interfaces/IICOManager.sol";
 import "./interfaces/IICOBondingCurve.sol";
 
-contract LunarGenerator is ILunarGenerator {
+contract EnjoyPumpGenerator is IEnjoyPumpGenerator {
 
     IDatabase public immutable database;
 
@@ -35,7 +35,7 @@ contract LunarGenerator is ILunarGenerator {
         Generates a token and bonding curve, initializes both and returns their addresses
      */
     function generateProject(bytes calldata tokenPayload, bytes calldata bondingCurvePayload_, address liquidityAdder) external override returns (address token, address bondingCurve) {
-        require(msg.sender == address(database), "LunarGenerator: Only database can call this function");
+        require(msg.sender == address(database), "EnjoyPumpGenerator: Only database can call this function");
 
         // generate token
         token = generateToken();
@@ -71,13 +71,13 @@ contract LunarGenerator is ILunarGenerator {
         }
         
         // initialize the token contract with the bonding curve address
-        ILunarPumpToken(token).__init__(tokenPayload, bondingCurve);
+        IEnjoyPumpToken(token).__init__(tokenPayload, bondingCurve);
         
         return (token, bondingCurve);
     }
 
     function generateToken() internal returns(address) {
-        return _clone(database.getLunarPumpTokenMasterCopy());
+        return _clone(database.getEnjoyPumpTokenMasterCopy());
     }
 
     function generateBondingCurve() internal returns(address) {
@@ -96,6 +96,7 @@ contract LunarGenerator is ILunarGenerator {
     function _clone(address implementation) internal returns (address instance) {
         /// @solidity memory-safe-assembly
         assembly {
+            //EIP-1167
             let ptr := mload(0x40)
             mstore(ptr, 0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000)
             mstore(add(ptr, 0x14), shl(0x60, implementation))

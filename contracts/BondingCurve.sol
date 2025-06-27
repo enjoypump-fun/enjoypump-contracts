@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.30;
 
 /**
     Launched Per Project, simulates a bonding curve for tokens to be locked and released as users buy and sell
@@ -8,7 +8,7 @@ pragma solidity 0.8.28;
  */
 
 import "./interfaces/IBondingCurve.sol";
-import "./interfaces/ILunarPumpToken.sol";
+import "./interfaces/IEnjoyPumpToken.sol";
 import "./interfaces/ILiquidityAdder.sol";
 import "./interfaces/IFeeRecipient.sol";
 import "./interfaces/IDatabase.sol";
@@ -191,16 +191,24 @@ contract BondingCurve is BondingCurveData, IBondingCurve {
     /**
      * @notice Sell tokens back to the bonding curve for ETH. We integrate forward to find how much ETH.
      * @param tokenAmount The number of tokens (1e18 scale) the user wants to sell.
+     * @param minOut The minimum amount of ETH (after fees) the user expects to receive.
      */
-    function sellTokens(uint256 tokenAmount) external returns (uint256 ethOutWei) {
+    function sellTokens(uint256 tokenAmount, uint256 minOut) external returns (uint256 ethOutWei) {
         require(tokenAmount > 0, "No tokens to sell");
         require(balanceOf(msg.sender) >= tokenAmount, "Not enough tokens");
 
         // Cap at how many the user can actually sell from the curve standpoint
         require(tokenAmount <= bondingSupply, "Too many tokens sold?");
 
-        // compute how much ETH we owe them in 1e18 scale
-        ethOutWei = solveIntegralSell(bondingSupply, tokenAmount);
+        // compute how much ETH we owe them in 1e18 scale (before fees)
+        uint256 ethBeforeFees = solveIntegralSell(bondingSupply, tokenAmount);
+
+        // Calculate ETH after fees for slippage protection
+        uint256 fee = (ethBeforeFees * tradeFee) / 1000;
+        uint256 ethAfterFees = ethBeforeFees - fee;
+
+        // Slippage protection - check before burning tokens
+        require(ethAfterFees >= minOut, "Too Few ETH Received After Fees, Increase Slippage");
 
         // burn the tokens
         _burn(msg.sender, tokenAmount);
@@ -211,12 +219,12 @@ contract BondingCurve is BondingCurveData, IBondingCurve {
         }
 
         // emit event
-        emit Sell(msg.sender, ethOutWei, tokenAmount);
+        emit Sell(msg.sender, ethBeforeFees, tokenAmount);
 
         // log trade
         trades[tradeNonce] = Trade({
             maker: msg.sender,
-            ethAmount: int256(ethOutWei),
+            ethAmount: int256(ethBeforeFees),
             tokenAmount: int256(tokenAmount) * int256(-1),
             currentSupply: bondingSupply,
             timestamp: block.timestamp
@@ -228,11 +236,14 @@ contract BondingCurve is BondingCurveData, IBondingCurve {
         }
 
         // take fee
-        uint256 ethOut = _takeFee(msg.sender, ethOutWei);
+        uint256 ethOut = _takeFee(msg.sender, ethBeforeFees);
 
         // send ETH
         (bool success, ) = payable(msg.sender).call{value: ethOut}("");
         require(success, "ETH transfer failed");
+
+        // Return the actual ETH amount sent (after fees)
+        return ethOut;
     }
 
     // --------------------------------------------------------------------------------
@@ -252,6 +263,22 @@ contract BondingCurve is BondingCurveData, IBondingCurve {
     }
 
     /**
+     * @notice Preview how many tokens you'd get by sending `ethAmountWei` wei after fees.
+     * @param ethAmountWei The amount of ETH in wei to buy with.
+     * @return tokensBought in 1e18 scale after fees
+     */
+    function previewBuyAfterFees(uint256 ethAmountWei) external view returns (uint256) {
+        if (ethAmountWei == 0) return 0;
+
+        // Calculate ETH after fees (same logic as _takeFee but without state changes)
+        uint256 fee = (ethAmountWei * tradeFee) / 1000;
+        uint256 ethAfterFees = ethAmountWei - fee;
+
+        // Convert to scaled using ETH after fees
+        return solveIntegralBuy(bondingSupply, ethAfterFees);
+    }
+
+    /**
      * @notice Preview how much ETH (in wei) you'd get for selling `tokenAmount` tokens.
      * @param tokenAmount The token amount in 1e18 scale.
      * @return ethOutWei The resulting ETH in wei.
@@ -259,6 +286,18 @@ contract BondingCurve is BondingCurveData, IBondingCurve {
     function previewSell(uint256 tokenAmount) external view returns (uint256) {
         if (tokenAmount == 0) return 0;
         return solveIntegralSell(bondingSupply, tokenAmount);
+    }
+
+    /**
+     * @notice Preview how much ETH (in wei) you'd get for selling `tokenAmount` tokens after fees.
+     * @param tokenAmount The token amount in 1e18 scale.
+     * @return ethOutWei The resulting ETH in wei after fees.
+     */
+    function previewSellAfterFees(uint256 tokenAmount) external view returns (uint256) {
+        if (tokenAmount == 0) return 0;
+        uint256 ethBeforeFees = solveIntegralSell(bondingSupply, tokenAmount);
+        uint256 fee = (ethBeforeFees * tradeFee) / 1000;
+        return ethBeforeFees - fee;
     }
 
     // --------------------------------------------------------------------------------
@@ -404,26 +443,26 @@ contract BondingCurve is BondingCurveData, IBondingCurve {
     }
 
     function _mint(address to, uint256 amount) internal {
-        if (ILunarPumpToken(token).balanceOf(to) == 0 && amount > 0) {
+        if (IEnjoyPumpToken(token).balanceOf(to) == 0 && amount > 0) {
             EnumerableSet.add(holders, to);
         }
 
         // transfer tokens
-        ILunarPumpToken(token).transfer(to, amount);
+        IEnjoyPumpToken(token).transfer(to, amount);
 
         // if this wallet has more than the max per wallet, revert
         if (maxSupplyPerWallet > 0) {
             require(
-                ILunarPumpToken(token).balanceOf(to) <= maxSupplyPerWallet,
+                IEnjoyPumpToken(token).balanceOf(to) <= maxSupplyPerWallet,
                 "Max Supply Per Wallet Exceeded"
             );
         }
     }
 
     function _burn(address from, uint256 amount) internal {
-        ILunarPumpToken(token).bondingCurveTransferFrom(from, address(this), amount);
+        IEnjoyPumpToken(token).bondingCurveTransferFrom(from, address(this), amount);
 
-        if (ILunarPumpToken(token).balanceOf(from) == 0 && EnumerableSet.contains(holders, from)) {
+        if (IEnjoyPumpToken(token).balanceOf(from) == 0 && EnumerableSet.contains(holders, from)) {
             EnumerableSet.remove(holders, from);
         }
     }
@@ -507,7 +546,7 @@ contract BondingCurve is BondingCurveData, IBondingCurve {
     }
 
     function balanceOf(address user) public view returns (uint256) {
-        return ILunarPumpToken(token).balanceOf(user);
+        return IEnjoyPumpToken(token).balanceOf(user);
     }
 
     /**
@@ -560,7 +599,7 @@ contract BondingCurve is BondingCurveData, IBondingCurve {
         for (uint i = startIndex; i < endIndex;) {
             address holder = EnumerableSet.at(holders, i);
             _holders[i - startIndex] = holder;
-            balances[i - startIndex] = ILunarPumpToken(token).balanceOf(holder);
+            balances[i - startIndex] = IEnjoyPumpToken(token).balanceOf(holder);
             unchecked { ++i; }
         }
         return ( _holders, balances );
@@ -570,7 +609,7 @@ contract BondingCurve is BondingCurveData, IBondingCurve {
         uint256 length = EnumerableSet.length(holders);
         uint256[] memory balances = new uint256[](length);
         for (uint i = 0; i < length;) {
-            balances[i] = ILunarPumpToken(token).balanceOf(EnumerableSet.at(holders, i));
+            balances[i] = IEnjoyPumpToken(token).balanceOf(EnumerableSet.at(holders, i));
             unchecked { ++i; }
         }
         return ( EnumerableSet.values(holders), balances );

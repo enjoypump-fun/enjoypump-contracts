@@ -1,5 +1,5 @@
 {
-  "name": "lunarpump-contracts",
+  "name": "enjoypump-contracts",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -7,7 +7,8 @@
     "lib": "lib"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "npx hardhat run scripts/deploy.js --network bscTestnet"
   },
   "repository": {
     "type": "git",

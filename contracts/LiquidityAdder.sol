@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.30;
 
 import "./interfaces/IDatabase.sol";
 import "./interfaces/IUniswapV2Router02.sol";
@@ -15,7 +15,7 @@ import "./lib/Ownable.sol";
  */
 contract LiquidityAdder is Ownable, ILiquidityAdder {
 
-    // Lunar Database
+    // EnjoyPump Database
     address private immutable database;
 
     // Fee on bonding
@@ -37,8 +37,8 @@ contract LiquidityAdder is Ownable, ILiquidityAdder {
         database = _database;
     }
 
-    modifier onlyLunarPumpTokens(address token) {
-        require(IDatabase(database).isLunarPumpToken(token), "LiquidityAdder: Token is not a LunarPump Token");
+    modifier onlyEnjoyPumpTokens(address token) {
+        require(IDatabase(database).isEnjoyPumpToken(token), "LiquidityAdder: Token is not a EnjoyPump Token");
         _;
     }
 
@@ -79,7 +79,7 @@ contract LiquidityAdder is Ownable, ILiquidityAdder {
         INIT_CODE_PAIR_HASH = _INIT_CODE_PAIR_HASH;
     }
 
-    function bond(address token) external payable override onlyLunarPumpTokens(token) {
+    function bond(address token) external payable override onlyEnjoyPumpTokens(token) {
 
         // ensure request comes from the bonding curve
         require(

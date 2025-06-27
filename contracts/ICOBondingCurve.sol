@@ -1,5 +1,5 @@
 //SPDX-License-Identifier: MIT
-pragma solidity 0.8.28;
+pragma solidity 0.8.30;
 
 /**
     Launched Per Project, simulates a bonding curve for tokens to be locked and released as users buy and sell
@@ -8,7 +8,7 @@ pragma solidity 0.8.28;
  */
 
 import "./interfaces/IICOBondingCurve.sol";
-import "./interfaces/ILunarPumpToken.sol";
+import "./interfaces/IEnjoyPumpToken.sol";
 import "./interfaces/ILiquidityAdder.sol";
 import "./interfaces/IFeeRecipient.sol";
 import "./interfaces/IDatabase.sol";
@@ -70,7 +70,7 @@ contract BondingCurveData {
     event Sell(address indexed user, uint256 quantityETH, uint256 quantityTokens);
 }
 
-contract BondingCurve is BondingCurveData, IICOBondingCurve {
+contract ICOBondingCurve is BondingCurveData, IICOBondingCurve {
 
     using PRBMathUD60x18 for uint256;
 
@@ -508,25 +508,25 @@ contract BondingCurve is BondingCurveData, IICOBondingCurve {
     }
 
     function _mint(address to, uint256 amount) internal {
-        if (ILunarPumpToken(token).balanceOf(to) == 0 && amount > 0) {
+        if (IEnjoyPumpToken(token).balanceOf(to) == 0 && amount > 0) {
             EnumerableSet.add(holders, to);
         }
 
-        ILunarPumpToken(token).transfer(to, amount);
+        IEnjoyPumpToken(token).transfer(to, amount);
 
         // if this wallet has more than the max per wallet, revert
         if (maxSupplyPerWallet > 0) {
             require(
-                ILunarPumpToken(token).balanceOf(to) <= maxSupplyPerWallet,
+                IEnjoyPumpToken(token).balanceOf(to) <= maxSupplyPerWallet,
                 "Max Supply Per Wallet Exceeded"
             );
         }
     }
 
     function _burn(address from, uint256 amount) internal {
-        ILunarPumpToken(token).bondingCurveTransferFrom(from, address(this), amount);
+        IEnjoyPumpToken(token).bondingCurveTransferFrom(from, address(this), amount);
 
-        if (ILunarPumpToken(token).balanceOf(from) == 0 && EnumerableSet.contains(holders, from)) {
+        if (IEnjoyPumpToken(token).balanceOf(from) == 0 && EnumerableSet.contains(holders, from)) {
             EnumerableSet.remove(holders, from);
         }
     }
@@ -629,7 +629,7 @@ contract BondingCurve is BondingCurveData, IICOBondingCurve {
     }
 
     function balanceOf(address user) public view returns (uint256) {
-        return ILunarPumpToken(token).balanceOf(user);
+        return IEnjoyPumpToken(token).balanceOf(user);
     }
 
     /**
@@ -682,7 +682,7 @@ contract BondingCurve is BondingCurveData, IICOBondingCurve {
         for (uint i = startIndex; i < endIndex;) {
             address holder = EnumerableSet.at(holders, i);
             _holders[i - startIndex] = holder;
-            balances[i - startIndex] = ILunarPumpToken(token).balanceOf(holder);
+            balances[i - startIndex] = IEnjoyPumpToken(token).balanceOf(holder);
             unchecked { ++i; }
         }
         return ( _holders, balances );
@@ -692,7 +692,7 @@ contract BondingCurve is BondingCurveData, IICOBondingCurve {
         uint256 length = EnumerableSet.length(holders);
         uint256[] memory balances = new uint256[](length);
         for (uint i = 0; i < length;) {
-            balances[i] = ILunarPumpToken(token).balanceOf(EnumerableSet.at(holders, i));
+            balances[i] = IEnjoyPumpToken(token).balanceOf(EnumerableSet.at(holders, i));
             unchecked { ++i; }
         }
         return ( EnumerableSet.values(holders), balances );
