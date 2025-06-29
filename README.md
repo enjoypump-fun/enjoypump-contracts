@@ -1,2 +1,1 @@
-# enjoypumpfun-contract
-# enjoypumpfun-contract
+# enjoypump-contracts
