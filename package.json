@@ -10,17 +10,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "deploy": "npx hardhat run scripts/deploy.js --network bscTestnet"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/DeFiMark/LunarPump-Contracts.git"
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/DeFiMark/LunarPump-Contracts/issues"
-  },
-  "homepage": "https://github.com/DeFiMark/LunarPump-Contracts#readme",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.2.3",
     "@nomiclabs/hardhat-waffle": "^2.0.6",
