@@ -60,9 +60,20 @@ contract BondingCurveData {
     // Holder list
     EnumerableSet.AddressSet internal holders;
 
-    // Buy Event
-    event Buy(address indexed user, uint256 quantityETH, uint256 quantityTokens);
-    event Sell(address indexed user, uint256 quantityETH, uint256 quantityTokens);
+    // 使用 versionNo 作为唯一标识符
+    event EnjoyPumpBuy(
+        address indexed user, 
+        uint256 quantityETH, 
+        uint256 quantityTokens,
+        uint32 indexed versionNo
+    );
+    
+    event EnjoyPumpSell(
+        address indexed user, 
+        uint256 quantityETH, 
+        uint256 quantityTokens,
+        uint32 indexed versionNo
+    );
 }
 
 // NOTE: ADD FAIL SAFE IN CASE OF UNFORSEEN EVENT -- WORST CASE IS FUNDS ARE LOCKED!!!
@@ -81,7 +92,7 @@ contract BondingCurve is BondingCurveData, IBondingCurve {
         liquidityAdder = liquidityAdder_;
         bonded = false;
         bondingSupply = 0;
-        tradeFee = 20; // 2%
+        tradeFee = 10; // 1%
     }
 
     // --------------------------------------------------------------------------------
@@ -99,75 +110,57 @@ contract BondingCurve is BondingCurveData, IBondingCurve {
         require(bondingSupply < BONDING_TARGET, "Bonding curve is full");
         require(!bonded, "Bonding curve is bonded");
 
-        // determine eth in value from trade fee
-        uint256 ethIn = _takeFee(recipient, msg.value);
+        // Step 1: Calculate tokens based on ETH after fees
+        uint256 fee = (msg.value * tradeFee) / 1000;
+        uint256 ethAfterFees = msg.value - fee;
+        tokensBought = solveIntegralBuy(bondingSupply, ethAfterFees);
 
-        // Determine the desired ΔS (in 1e18 scale) from the ETH sent.
-        tokensBought = solveIntegralBuy(bondingSupply, ethIn);
+        // Step 2: Slippage protection
+        require(tokensBought >= minOut, "Too Few Tokens Received After Fees, Increase Slippage");
 
-        // Determine the remaining tokens available.
+        // Step 3: Check remaining supply and adjust if necessary
         uint256 remainingTokens = BONDING_TARGET - bondingSupply;
-
-        // If the desired purchase exceeds the remaining supply,
-        // clamp tokensBought to the remaining amount.
+        uint256 actualEthUsed = msg.value;
+        
         if (tokensBought > remainingTokens) {
-
-            // Update the tokens bought to the remaining amount.
+            // Adjust to remaining supply
             tokensBought = remainingTokens;
-
-            // Compute the actual cost (in 1e18 scale) for tokensBought using the forward integral:
-            // costForward = (a/b) * (e^(b*(S + ΔS)) - e^(b*S))
-            uint256 actualCostScaled = costForward(bondingSupply, tokensBought);
-
-            // Ensure that the user sent at least the actual cost.
-            require(ethIn >= actualCostScaled, "Not enough ETH sent");
-
-            // Update state: add the tokens bought.
-            unchecked {
-                bondingSupply += tokensBought;
-            }
-
-            // Mint tokens to the buyer.
-            _mint(recipient, tokensBought);
-
-            // Refund any ETH not used in the purchase.
-            uint256 refund = ethIn - actualCostScaled;
-
-            // bond the contract, sending necessary funds to fee receiver and dex
-            _bond(address(this).balance - refund);
             
-            // Refund any excess ETH
-            if (refund > 0) {
-                (bool success, ) = payable(recipient).call{value: refund}("");
-                require(success, "Refund failed");
-            }
-
-        } else {
-
-            // ensure minOut is enforced
-            require(
-                tokensBought >= minOut,
-                'Too Few Tokens Received, Increase Slippage'
-            );
-
-            // Update state: add the tokens bought.
-            unchecked {
-                bondingSupply += tokensBought;
-            }
-
-            // Mint tokens to the buyer.
-            _mint(recipient, tokensBought);
-
-            // see if bonded
-            if (bondingSupply >= BONDING_TARGET) {
-                _bond(address(this).balance);
-            }
+            // Calculate actual cost for adjusted amount
+            uint256 actualCost = costForward(bondingSupply, tokensBought);
+            
+            // Ensure sufficient ETH was sent
+            require(msg.value >= actualCost, "Not enough ETH sent");
+            
+            // Update actual ETH used
+            actualEthUsed = actualCost;
         }
 
-        // emit event
-        emit Buy(recipient, ethIn, tokensBought);
+        // Step 4: Update state and mint tokens
+        unchecked {
+            bondingSupply += tokensBought;
+        }
+        _mint(recipient, tokensBought);
 
-        // log trade
+        // Step 5: Take fees based on actual ETH used
+        uint256 ethIn = _takeFee(recipient, actualEthUsed);
+
+        // Step 6: Check if bonding is needed
+        if (bondingSupply >= BONDING_TARGET) {
+            _bond(address(this).balance);
+        }
+
+        // Step 7: Refund excess ETH if any
+        uint256 refund = msg.value - actualEthUsed;
+        if (refund > 0) {
+            (bool success, ) = payable(recipient).call{value: refund}("");
+            require(success, "Refund failed");
+        }
+
+        // Step 8: Emit event with version number
+        emit EnjoyPumpBuy(recipient, ethIn, tokensBought, versionNo);
+
+        // Step 9: Log trade
         trades[tradeNonce] = Trade({
             maker: msg.sender,
             ethAmount: int256(ethIn) * int256(-1),
@@ -176,7 +169,7 @@ contract BondingCurve is BondingCurveData, IBondingCurve {
             timestamp: block.timestamp
         });
 
-        // increment trade nonce
+        // Step 10: Increment trade nonce
         unchecked {
             ++tradeNonce;
         }
@@ -193,35 +186,45 @@ contract BondingCurve is BondingCurveData, IBondingCurve {
      * @param tokenAmount The number of tokens (1e18 scale) the user wants to sell.
      * @param minOut The minimum amount of ETH (after fees) the user expects to receive.
      */
+    /**
+     * @notice Sell tokens back to the bonding curve for ETH. We integrate forward to find how much ETH.
+     * @param tokenAmount The number of tokens (1e18 scale) the user wants to sell.
+     * @param minOut The minimum amount of ETH (after fees) the user expects to receive.
+     */
     function sellTokens(uint256 tokenAmount, uint256 minOut) external returns (uint256 ethOutWei) {
         require(tokenAmount > 0, "No tokens to sell");
         require(balanceOf(msg.sender) >= tokenAmount, "Not enough tokens");
 
-        // Cap at how many the user can actually sell from the curve standpoint
+        // Step 1: Check supply constraints
         require(tokenAmount <= bondingSupply, "Too many tokens sold?");
 
-        // compute how much ETH we owe them in 1e18 scale (before fees)
+        // Step 2: Calculate ETH before fees
         uint256 ethBeforeFees = solveIntegralSell(bondingSupply, tokenAmount);
 
-        // Calculate ETH after fees for slippage protection
+        // Step 3: Calculate ETH after fees for slippage protection
         uint256 fee = (ethBeforeFees * tradeFee) / 1000;
         uint256 ethAfterFees = ethBeforeFees - fee;
 
-        // Slippage protection - check before burning tokens
+        // Step 4: Slippage protection
         require(ethAfterFees >= minOut, "Too Few ETH Received After Fees, Increase Slippage");
 
-        // burn the tokens
+        // Step 5: Burn tokens and update supply
         _burn(msg.sender, tokenAmount);
-
-        // update supply
         unchecked {
             bondingSupply -= tokenAmount;
         }
 
-        // emit event
-        emit Sell(msg.sender, ethBeforeFees, tokenAmount);
+        // Step 6: Take fees and get final ETH amount
+        uint256 ethOut = _takeFee(msg.sender, ethBeforeFees);
 
-        // log trade
+        // Step 7: Send ETH to user
+        (bool success, ) = payable(msg.sender).call{value: ethOut}("");
+        require(success, "ETH transfer failed");
+
+        // Step 8: Emit event with version number
+        emit EnjoyPumpSell(msg.sender, ethBeforeFees, tokenAmount, versionNo);
+
+        // Step 9: Log trade
         trades[tradeNonce] = Trade({
             maker: msg.sender,
             ethAmount: int256(ethBeforeFees),
@@ -230,19 +233,11 @@ contract BondingCurve is BondingCurveData, IBondingCurve {
             timestamp: block.timestamp
         });
 
-        // increment trade nonce
+        // Step 10: Increment trade nonce
         unchecked {
             ++tradeNonce;
         }
 
-        // take fee
-        uint256 ethOut = _takeFee(msg.sender, ethBeforeFees);
-
-        // send ETH
-        (bool success, ) = payable(msg.sender).call{value: ethOut}("");
-        require(success, "ETH transfer failed");
-
-        // Return the actual ETH amount sent (after fees)
         return ethOut;
     }
 

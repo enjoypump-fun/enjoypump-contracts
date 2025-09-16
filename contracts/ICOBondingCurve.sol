@@ -85,7 +85,7 @@ contract ICOBondingCurve is BondingCurveData, IICOBondingCurve {
         liquidityAdder = liquidityAdder_;
         bonded = false;
         bondingSupply = 0;
-        tradeFee = 20; // 2%
+        tradeFee = 10; // 1%
         icoManager = icoManager_;
         isICOActive = true;
     }

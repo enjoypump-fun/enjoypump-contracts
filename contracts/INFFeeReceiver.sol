@@ -16,20 +16,10 @@ contract INFFeeReceiver is Ownable {
     uint256 public totalAllocation;
 
     constructor() {
-        allocation[0x82A4a81c6d4D4C2c727D9ff0A83839AeAd2F1928] = 2;
-        allocation[0x633940e1E8fC7731A610Ae8113a7219eB024c3A9] = 1;
-        allocation[0x2b739b02e899cee1f077C6a81717884D9eaa5426] = 1;
-        allocation[0xC9C46598cc854f2857199e17f747e8A7F6f9c7E3] = 1;
-        allocation[0x98973020B7E67A48834D1c5CF6fE5ed9E1763EA9] = 2;
-        allocation[0x4262C8ba078ddc8587c70d6BBbaA1A71717515bA] = 93;
+        allocation[0x1C8143d3178f1825490DBf314C1b0c3C1e31F9b5] = 100;
         totalAllocation = 100;
 
-        recipients.push(0x82A4a81c6d4D4C2c727D9ff0A83839AeAd2F1928);
-        recipients.push(0x633940e1E8fC7731A610Ae8113a7219eB024c3A9);
-        recipients.push(0x2b739b02e899cee1f077C6a81717884D9eaa5426);
-        recipients.push(0xC9C46598cc854f2857199e17f747e8A7F6f9c7E3);
-        recipients.push(0x98973020B7E67A48834D1c5CF6fE5ed9E1763EA9);
-        recipients.push(0x4262C8ba078ddc8587c70d6BBbaA1A71717515bA);
+        recipients.push(0x1C8143d3178f1825490DBf314C1b0c3C1e31F9b5);
     }
 
     function withdraw(address token, address to, uint256 amount) external onlyOwner {

@@ -5,16 +5,19 @@ let secret = require("./secret");
 module.exports = {
   networks: {
     hardhat: {
-      chainId: 10143//56//56//8453//137//8453//137//8453//56 
+      // chainId: 10143//56//56//8453//137//8453//137//8453//56 
+      chainId: 97//56//56//8453//137//8453//137//8453//56 
     },
-    // bscTestnet: {
-    //   url: 'https://data-seed-prebsc-2-s1.binance.org:8545/',
-    //   accounts: [secret.key]
-    // },
-    monadTestnet: {
-      url: 'https://testnet-rpc.monad.xyz',
-      accounts: [secret.key]
-    }
+    bscTestnet: {
+      url: 'https://bsc-testnet.therpc.io',
+      accounts: [secret.key],
+      chainId: 97
+    },
+    // monadTestnet: {
+    //   url: 'https://testnet-rpc.monad.xyz',
+    //   accounts: [secret.key],
+    //   chainId: 10143
+    // }
     // bscMainnet: {
     //   url: 'https://bnb-mainnet.g.alchemy.com/v2/BI5XlYByNdQfh3hcluwetuwR9KzTSn01',
     //   accounts: [secret.key]
@@ -41,6 +44,9 @@ module.exports = {
   },
   etherscan: {
     enabled: false,
+    apiKey: {
+      bscTestnet: '3C4SCAT1FSE73MXVZ1WHPM7R1VJEYJDIZZ'
+    }
     // apiKey: secret.bscscanAPI,//polygonAPI,//basescanAPI,//polygonAPI//bscscanAPI
     // customChains: [
       // {
@@ -61,9 +67,14 @@ module.exports = {
       // }
     // ]
   },
+  // sourcify: {
+  //   apiUrl: "https://sourcify-api-monad.blockvision.org",
+  //   browserUrl: "https://testnet.monadexplorer.com",
+  //   enabled: true,
+  // },
   sourcify: {
-    apiUrl: "https://sourcify-api-monad.blockvision.org",
-    browserUrl: "https://testnet.monadexplorer.com",
+    apiUrl: "https://api.etherscan.io/v2/api",
+    browserUrl: "https://testnet.bscscan.com/",
     enabled: true,
   },
   solidity: {

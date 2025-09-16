@@ -14,7 +14,6 @@ import "./lib/Ownable.sol";
     NOTE: ADD FAIL SAFE IN CASE OF UNFORSEEN EVENT -- WORST CASE IS FUNDS ARE LOCKED!!!
  */
 contract LiquidityAdder is Ownable, ILiquidityAdder {
-
     // EnjoyPump Database
     address private immutable database;
 
@@ -25,10 +24,11 @@ contract LiquidityAdder is Ownable, ILiquidityAdder {
     uint256 public tokenSlippage = 92;
 
     // DEX Info
-    address public dex = 0x4752ba5DBc23f44D87826276BF6Fd6b1C372aD24;
-    address public factory = 0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6;
-    address public WETH = 0x4200000000000000000000000000000000000006;
-    bytes32 public INIT_CODE_PAIR_HASH = 0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
+    address public dex = 0xfB8e1C3b833f9E67a71C859a132cf783b645e436;
+    address public factory = 0x733E88f248b742db6C14C0b1713Af5AD7fDd59D0;
+    address public WETH = 0x760AfE86e5de5fa0Ee542fc7B7B713e1c5425701;
+    bytes32 public INIT_CODE_PAIR_HASH =
+        0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f;
 
     // Whether or not dust is enforced
     bool public enforceDust;
@@ -38,7 +38,10 @@ contract LiquidityAdder is Ownable, ILiquidityAdder {
     }
 
     modifier onlyEnjoyPumpTokens(address token) {
-        require(IDatabase(database).isEnjoyPumpToken(token), "LiquidityAdder: Token is not a EnjoyPump Token");
+        require(
+            IDatabase(database).isEnjoyPumpToken(token),
+            "LiquidityAdder: Token is not a EnjoyPump Token"
+        );
         _;
     }
 
@@ -48,7 +51,10 @@ contract LiquidityAdder is Ownable, ILiquidityAdder {
     }
 
     function withdrawToken(address token) external onlyOwner {
-        IERC20(token).transfer(msg.sender, IERC20(token).balanceOf(address(this)));
+        IERC20(token).transfer(
+            msg.sender,
+            IERC20(token).balanceOf(address(this))
+        );
     }
 
     function setBondFee(uint256 _bondFee) external onlyOwner {
@@ -74,19 +80,22 @@ contract LiquidityAdder is Ownable, ILiquidityAdder {
     function setEnforceDust(bool _enforceDust) external onlyOwner {
         enforceDust = _enforceDust;
     }
-    
-    function setInitCodePairHash(bytes32 _INIT_CODE_PAIR_HASH) external onlyOwner {
+
+    function setInitCodePairHash(
+        bytes32 _INIT_CODE_PAIR_HASH
+    ) external onlyOwner {
         INIT_CODE_PAIR_HASH = _INIT_CODE_PAIR_HASH;
     }
 
-    function bond(address token) external payable override onlyEnjoyPumpTokens(token) {
-
+    function bond(
+        address token
+    ) external payable override onlyEnjoyPumpTokens(token) {
         // ensure request comes from the bonding curve
         require(
             msg.sender == IDatabase(database).getBondingCurveForToken(token),
             "LiquidityAdder: Unauthorized"
         );
-        
+
         // take fee
         uint256 liquidityAmount = _takeFee(token, msg.value);
         uint256 tokenAmount = IERC20(token).balanceOf(address(this));
@@ -102,8 +111,9 @@ contract LiquidityAdder is Ownable, ILiquidityAdder {
                 // ensure the ratio will match the desired ratio
                 // ratio = tokenAmount * 1e18 / wethAmount
                 // tokenAmount = (ratio * wethAmount) / 1e18
-                uint256 desiredRatio = ( tokenAmount * 1e18 ) / liquidityAmount;
-                uint256 desiredTokenAmount = ( ( desiredRatio * wethAmountInLP ) / 1e18 ) - tokenAmountInLP;
+                uint256 desiredRatio = (tokenAmount * 1e18) / liquidityAmount;
+                uint256 desiredTokenAmount = ((desiredRatio * wethAmountInLP) /
+                    1e18) - tokenAmountInLP;
 
                 // send desiredTokenAmount to dex and sync the LP
                 IERC20(token).transfer(pair, desiredTokenAmount);
@@ -121,20 +131,24 @@ contract LiquidityAdder is Ownable, ILiquidityAdder {
         IUniswapV2Router02(dex).addLiquidityETH{value: liquidityAmount}(
             token,
             tokenAmount,
-            ( tokenAmount * tokenSlippage ) / 100,
-            ( liquidityAmount * tokenSlippage ) / 100,
+            (tokenAmount * tokenSlippage) / 100,
+            (liquidityAmount * tokenSlippage) / 100,
             IDatabase(database).getLiquidityLocker(),
             block.timestamp + 100
         );
     }
 
-    function _takeFee(address token, uint256 amount) internal returns (uint256 remainingForLiquidity) {
-
+    function _takeFee(
+        address token,
+        uint256 amount
+    ) internal returns (uint256 remainingForLiquidity) {
         // split fee
-        uint256 fee = ( amount * bondFee ) / 1000;
+        uint256 fee = (amount * bondFee) / 1000;
 
         // send fee
-        IFeeRecipient(IDatabase(database).getFeeRecipient()).takeBondFee{value: fee}(token);
+        IFeeRecipient(IDatabase(database).getFeeRecipient()).takeBondFee{
+            value: fee
+        }(token);
 
         // return amount minus fee
         return amount - fee;
@@ -155,21 +169,37 @@ contract LiquidityAdder is Ownable, ILiquidityAdder {
     }
 
     // calculates the CREATE2 address for a pair without making any external calls
-    function pairFor(address tokenA, address tokenB) internal view returns (address pair) {
+    function pairFor(
+        address tokenA,
+        address tokenB
+    ) internal view returns (address pair) {
         (address token0, address token1) = sortTokens(tokenA, tokenB);
-        pair = address(uint160(uint(keccak256(abi.encodePacked(
-                hex'ff',
-                factory,
-                keccak256(abi.encodePacked(token0, token1)),
-                INIT_CODE_PAIR_HASH
-            )))));
+        pair = address(
+            uint160(
+                uint(
+                    keccak256(
+                        abi.encodePacked(
+                            hex"ff",
+                            factory,
+                            keccak256(abi.encodePacked(token0, token1)),
+                            INIT_CODE_PAIR_HASH
+                        )
+                    )
+                )
+            )
+        );
     }
 
     // returns sorted token addresses, used to handle return values from pairs sorted in this order
-    function sortTokens(address tokenA, address tokenB) internal pure returns (address token0, address token1) {
-        require(tokenA != tokenB, 'DEXLibrary: IDENTICAL_ADDRESSES');
-        (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), 'DEXLibrary: ZERO_ADDRESS');
+    function sortTokens(
+        address tokenA,
+        address tokenB
+    ) internal pure returns (address token0, address token1) {
+        require(tokenA != tokenB, "DEXLibrary: IDENTICAL_ADDRESSES");
+        (token0, token1) = tokenA < tokenB
+            ? (tokenA, tokenB)
+            : (tokenB, tokenA);
+        require(token0 != address(0), "DEXLibrary: ZERO_ADDRESS");
     }
 
     /**
@@ -196,7 +226,9 @@ contract LiquidityAdder is Ownable, ILiquidityAdder {
         bytes32 codehash;
         bytes32 accountHash = 0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470;
         // solhint-disable-next-line no-inline-assembly
-        assembly { codehash := extcodehash(account) }
+        assembly {
+            codehash := extcodehash(account)
+        }
         return (codehash != accountHash && codehash != 0x0);
     }
 

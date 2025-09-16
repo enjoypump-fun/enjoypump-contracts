@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "deploy": "npx hardhat run scripts/deploy.js --network bscTestnet"
+    "deploy": "npx hardhat run scripts/deploy.js --network bscTestnet",
+    "deploy-monadTestnet": "npx hardhat run scripts/deploy.js --network monadTestnet"
   },
   "keywords": [],
   "author": "",
